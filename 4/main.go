@@ -18,18 +18,34 @@ type card struct {
 }
 
 func (c card) value() (v int) {
+	n := c.haveWinning()
+	for i := 0; i < n; i++ {
+		if i == 0 {
+			v = 1
+			continue
+		}
+		v *= 2
+	}
+	return v
+}
+
+func (c card) haveWinning() (n int) {
 	for _, h := range c.have {
 		for _, w := range c.winning {
-			if h == w && v == 0 {
-				v = 1
-				continue
-			}
 			if h == w {
-				v *= 2
+				n++
 			}
 		}
 	}
-	return v
+	return n
+}
+
+func (c card) wonNumbers() (won []int) {
+	n := c.haveWinning()
+	for i := 1; i < n+1; i++ {
+		won = append(won, c.number+i)
+	}
+	return won
 }
 
 func main() {
@@ -93,6 +109,27 @@ func part1(cards []card) (total int) {
 	return total
 }
 
-func part2(cards []card) int {
-	return 0
+func part2(cardList []card) (total int) {
+	cards := make(map[int][]card)
+	for _, c := range cardList {
+		cards[c.number] = []card{c}
+	}
+
+	insertWon := func(c card) {
+		wn := c.wonNumbers()
+		for _, n := range wn {
+			cards[n] = append(cards[n], cards[n][0])
+		}
+	}
+
+	for _, c := range cardList {
+		for _, c := range cards[c.number] {
+			insertWon(c)
+		}
+	}
+
+	for _, c := range cards {
+		total += len(c)
+	}
+	return total
 }
