@@ -36,18 +36,49 @@ func main() {
 func part1(lines []string) (total int, err error) {
 	n := parse(lines)
 	for _, nn := range n {
-		total += nn
+		total += nn.number
 	}
 	return total, nil
 }
 
 func part2(lines []string) (total int, err error) {
-	return 0, nil
+	parts := parse(lines)
+	gears := make(map[point][]part)
+	for _, p := range parts {
+	GEAR:
+		for _, g := range p.gears {
+			if pp, ok := gears[g]; ok {
+				for _, ppp := range pp {
+					if ppp.number == p.number {
+						continue GEAR
+					}
+				}
+			}
+			gears[g] = append(gears[g], p)
+		}
+	}
+	for _, parts := range gears {
+		if len(parts) != 2 {
+			continue
+		}
+		total += parts[0].number * parts[1].number
+	}
+	return total, nil
+}
+
+type part struct {
+	number int
+	gears  []point
+}
+
+type point struct {
+	y int
+	x int
 }
 
 // incredibly janky character parser
 // trying not to go full blown rsc with it
-func parse(lines []string) (partNumbers []int) {
+func parse(lines []string) (parts []part) {
 	var characters [][]string
 	for _, l := range lines {
 		s := strings.Split(l, "")
@@ -60,40 +91,85 @@ func parse(lines []string) (partNumbers []int) {
 		currentNumber        string
 		inNumber             bool
 		currentTouchesSymbol bool
+		currentGears         []point = nil
 	)
 
 	reset := func() {
 		currentNumber = ""
 		inNumber = false
+		currentGears = nil
 		currentTouchesSymbol = false
 	}
 
-	touchesSymbol := func(y, x int) bool {
+	contiguous := func(y, x int) []point {
 		if y == 0 && x == 0 {
-			return isSymbol(characters[0][1]) || isSymbol(characters[1][0]) || isSymbol(characters[1][1])
+			return []point{
+				{0, 1}, {1, 0}, {1, 1},
+			}
 		}
 		if y == 0 && x == width {
-			return isSymbol(characters[0][width-1]) || isSymbol(characters[1][width-1]) || isSymbol(characters[1][width])
+			return []point{
+				{0, width - 1}, {1, width - 1}, {1, width},
+			}
 		}
 		if y == height && x == 0 {
-			return isSymbol(characters[height-1][0]) || isSymbol(characters[height-1][1]) || isSymbol(characters[height][1])
+			return []point{
+				{height - 1, 0}, {height - 1, 1}, {height, 1},
+			}
 		}
 		if y == height && x == width {
-			return isSymbol(characters[height][width-1]) || isSymbol(characters[height-1][width-1]) || isSymbol(characters[height-1][width])
+			return []point{
+				{height, width - 1}, {height - 1, width - 1}, {height - 1, width},
+			}
 		}
 		if y == 0 {
-			return isSymbol(characters[0][x-1]) || isSymbol(characters[0][x+1]) || isSymbol(characters[1][x-1]) || isSymbol(characters[1][x]) || isSymbol(characters[1][x+1])
+			return []point{
+				{0, x - 1}, {0, x + 1}, {1, x - 1}, {1, x}, {1, x + 1},
+			}
 		}
 		if y == height {
-			return isSymbol(characters[height][x-1]) || isSymbol(characters[height][x+1]) || isSymbol(characters[height-1][x-1]) || isSymbol(characters[height-1][x]) || isSymbol(characters[height-1][x+1])
+			return []point{
+				{height, x - 1}, {height, x + 1}, {height - 1, x - 1}, {height - 1, x}, {height - 1, x + 1},
+			}
 		}
 		if x == 0 {
-			return isSymbol(characters[y-1][0]) || isSymbol(characters[y-1][1]) || isSymbol(characters[y][1]) || isSymbol(characters[y+1][0]) || isSymbol(characters[y+1][1])
+			return []point{
+				{y - 1, 0}, {y - 1, 1}, {y, 1}, {y + 1, 0}, {y + 1, 1},
+			}
 		}
 		if x == width {
-			return isSymbol(characters[y-1][0]) || isSymbol(characters[y-1][width-1]) || isSymbol(characters[y][width-1]) || isSymbol(characters[y+1][width]) || isSymbol(characters[y+1][width-1])
+			return []point{
+				{y - 1, 0}, {y - 1, width - 1}, {y, width - 1}, {y + 1, width}, {y + 1, width - 1},
+			}
 		}
-		return isSymbol(characters[y-1][x-1]) || isSymbol(characters[y-1][x]) || isSymbol(characters[y-1][x+1]) || isSymbol(characters[y][x-1]) || isSymbol(characters[y][x+1]) || isSymbol(characters[y+1][x-1]) || isSymbol(characters[y+1][x]) || isSymbol(characters[y+1][x+1])
+		return []point{
+			{y - 1, x - 1},
+			{y - 1, x},
+			{y - 1, x + 1},
+			{y, x - 1},
+			{y, x + 1},
+			{y + 1, x - 1},
+			{y + 1, x},
+			{y + 1, x + 1},
+		}
+	}
+
+	touchesSymbol := func(y, x int) bool {
+		for _, p := range contiguous(y, x) {
+			if isSymbol(characters[p.y][p.x]) {
+				return true
+			}
+		}
+		return false
+	}
+
+	touchingGears := func(y, x int) (gears []point) {
+		for _, p := range contiguous(y, x) {
+			if isGear(characters[p.y][p.x]) {
+				gears = append(gears, p)
+			}
+		}
+		return gears
 	}
 
 	for y, l := range characters {
@@ -107,7 +183,10 @@ func parse(lines []string) (partNumbers []int) {
 				if err != nil {
 					panic(fmt.Sprintf("y: %d, x: %d, err: %v", y, x, err))
 				}
-				partNumbers = append(partNumbers, pn)
+				parts = append(parts, part{
+					number: pn,
+					gears:  currentGears,
+				})
 				reset()
 				continue
 			}
@@ -116,12 +195,14 @@ func parse(lines []string) (partNumbers []int) {
 				if !currentTouchesSymbol && touchesSymbol(y, x) {
 					currentTouchesSymbol = true
 				}
+				currentGears = append(currentGears, touchingGears(y, x)...)
 				continue
 			}
 			if isDigit(c) {
 				inNumber = true
 				currentNumber += c
 				currentTouchesSymbol = touchesSymbol(y, x)
+				currentGears = append(currentGears, touchingGears(y, x)...)
 			}
 		}
 		if inNumber && currentTouchesSymbol {
@@ -129,12 +210,15 @@ func parse(lines []string) (partNumbers []int) {
 			if err != nil {
 				panic(fmt.Sprintf("y: %d, x: %d, err: %v", y, width, err))
 			}
-			partNumbers = append(partNumbers, pn)
+			parts = append(parts, part{
+				number: pn,
+				gears:  currentGears,
+			})
 		}
 		reset()
 	}
 
-	return partNumbers
+	return parts
 }
 
 func isDigit(c string) bool {
@@ -152,4 +236,8 @@ func isDigit(c string) bool {
 
 func isSymbol(c string) bool {
 	return !isDigit(c) && !(c == ".")
+}
+
+func isGear(c string) bool {
+	return c == "*"
 }
