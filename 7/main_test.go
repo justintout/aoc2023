@@ -21,12 +21,9 @@ func TestPart1(t *testing.T) {
 }
 
 func TestPart2(t *testing.T) {
-	expected := 0
+	expected := 5905
 	in := parse(strings.Split(example, "\n"))
-	out, err := part2(in)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
+	out := part2(in)
 	if expected != out {
 		t.Errorf("expected: %d, got: %d", expected, out)
 	}

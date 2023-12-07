@@ -37,6 +37,22 @@ var cardValues map[string]int = map[string]int{
 	"A": 13,
 }
 
+var cardValuesWithJoker map[string]int = map[string]int{
+	"J": 1,
+	"2": 2,
+	"3": 3,
+	"4": 4,
+	"5": 5,
+	"6": 6,
+	"7": 7,
+	"8": 8,
+	"9": 9,
+	"T": 10,
+	"Q": 11,
+	"K": 12,
+	"A": 13,
+}
+
 type biddedHand struct {
 	hand []string
 	bid  int
@@ -93,6 +109,55 @@ func (b biddedHand) handType() handType {
 	}
 }
 
+func (b biddedHand) handTypeWithJoker() handType {
+	var (
+		four   bool
+		three  bool
+		pairs  int
+		jokers int
+	)
+	for v, c := range b.cardCounts() {
+		if c == 5 {
+			return fiveOfKind
+		}
+		if v == "J" {
+			if c == 4 {
+				return fiveOfKind
+			}
+			jokers = c
+			continue
+		}
+		if c == 4 {
+			four = true
+			continue
+		}
+		if c == 3 {
+			three = true
+			continue
+		}
+		if c == 2 {
+			pairs++
+			continue
+		}
+	}
+	switch {
+	case four && jokers == 1, three && jokers == 2, pairs == 1 && jokers == 3:
+		return fiveOfKind
+	case four, three && jokers == 1, pairs == 1 && jokers == 2, jokers == 3:
+		return fourOfKind
+	case three && pairs == 1, pairs == 2 && jokers == 1:
+		return fullHouse
+	case three, pairs == 1 && jokers == 1, jokers == 2:
+		return threeOfKind
+	case pairs == 2, pairs == 1 && jokers == 1:
+		return twoPair
+	case pairs == 1, jokers == 1:
+		return pair
+	default:
+		return highCard
+	}
+}
+
 func main() {
 	f, err := os.Open("input.txt")
 	if err != nil {
@@ -109,10 +174,7 @@ func main() {
 	p1 := part1(hands)
 	fmt.Printf("part 1: %d\n", p1)
 
-	p2, err := part2(hands)
-	if err != nil {
-		panic("part 2: " + err.Error())
-	}
+	p2 := part2(hands)
 	fmt.Printf("part 2: %d\n", p2)
 }
 
@@ -140,8 +202,12 @@ func part1(hands []biddedHand) (total int) {
 	return total
 }
 
-func part2(hands []biddedHand) (total int, err error) {
-	return total, nil
+func part2(hands []biddedHand) (total int) {
+	slices.SortFunc(hands, cmpWithJoker)
+	for i, h := range hands {
+		total += h.bid * (i + 1)
+	}
+	return total
 }
 
 func cmp(a, b biddedHand) int {
@@ -159,6 +225,28 @@ func cmp(a, b biddedHand) int {
 				return -1
 			}
 			if cardValues[v] > cardValues[b.hand[i]] {
+				return 1
+			}
+		}
+	}
+	return 0
+}
+
+func cmpWithJoker(a, b biddedHand) int {
+	at := a.handTypeWithJoker()
+	bt := b.handTypeWithJoker()
+	if at < bt {
+		return -1
+	}
+	if at > bt {
+		return 1
+	}
+	if at == bt {
+		for i, v := range a.hand {
+			if cardValuesWithJoker[v] < cardValuesWithJoker[b.hand[i]] {
+				return -1
+			}
+			if cardValuesWithJoker[v] > cardValuesWithJoker[b.hand[i]] {
 				return 1
 			}
 		}
