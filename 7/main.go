@@ -197,7 +197,7 @@ func parse(lines []string) []biddedHand {
 func part1(hands []biddedHand) (total int) {
 	slices.SortFunc(hands, cmp)
 	for i, h := range hands {
-		total += h.bid * (i + 1)
+		total += h.value(i + 1)
 	}
 	return total
 }
@@ -205,7 +205,7 @@ func part1(hands []biddedHand) (total int) {
 func part2(hands []biddedHand) (total int) {
 	slices.SortFunc(hands, cmpWithJoker)
 	for i, h := range hands {
-		total += h.bid * (i + 1)
+		total += h.value(i + 1)
 	}
 	return total
 }
