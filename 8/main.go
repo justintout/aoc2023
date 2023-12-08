@@ -7,9 +7,11 @@ import (
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/cznic/mathutil"
 )
 
-var idRegex = regexp.MustCompile(`[A-Z]{3}`)
+var idRegex = regexp.MustCompile(`[0-9A-Z]{3}`)
 
 type instructions *ring.Ring
 
@@ -44,10 +46,7 @@ func main() {
 	p1 := part1(ins, nodes)
 	fmt.Printf("part 1: %d\n", p1)
 
-	p2, err := part2(ins, nodes)
-	if err != nil {
-		panic("part 2 error: " + err.Error())
-	}
+	p2 := part2(ins, nodes)
 	fmt.Printf("part 2: %d\n", p2)
 }
 
@@ -82,6 +81,43 @@ func part1(ins *ring.Ring, nodes map[string]node) (total int) {
 	return steps
 }
 
-func part2(ins instructions, nodes map[string]node) (total int, err error) {
-	return total, nil
+// each starting node's solution is a factor of the total,
+// so find the LCM of all of the starting node's steps.
+// we'll use prime factorization
+func part2(ins *ring.Ring, nodes map[string]node) (total int) {
+	var startingNodes []node
+	for id, n := range nodes {
+		if strings.HasSuffix(id, "A") {
+			startingNodes = append(startingNodes, n)
+		}
+	}
+	var steps []int
+	for _, n := range startingNodes {
+		ins := ins
+		current := n
+		s := 0
+		for !strings.HasSuffix(current.id, "Z") {
+			if ins.Value == "L" {
+				current = nodes[current.left]
+			}
+			if ins.Value == "R" {
+				current = nodes[current.right]
+			}
+			ins = ins.Next()
+			s++
+		}
+		steps = append(steps, s)
+	}
+	factors := make(map[int]struct{})
+	for _, s := range steps {
+		f := mathutil.FactorInt(uint32(s))
+		for _, x := range f {
+			factors[int(x.Prime)] = struct{}{}
+		}
+	}
+	total = 1
+	for x := range factors {
+		total *= x
+	}
+	return total
 }
