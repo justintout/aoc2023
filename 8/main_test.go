@@ -5,15 +5,16 @@ import (
 	"testing"
 )
 
-var example = ``
+var example = `LLR
+
+AAA = (BBB, BBB)
+BBB = (AAA, ZZZ)
+ZZZ = (ZZZ, ZZZ)`
 
 func TestPart1(t *testing.T) {
-	expected := 0
-	in := parse(strings.Split(example, "\n"))
-	out, err := part1(in)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
+	expected := 6
+	ins, nodes := parse(strings.Split(example, "\n"))
+	out := part1(ins, nodes)
 	if expected != out {
 		t.Errorf("expected: %d, got: %d", expected, out)
 	}
@@ -21,8 +22,8 @@ func TestPart1(t *testing.T) {
 
 func TestPart2(t *testing.T) {
 	expected := 0
-	in := parse(strings.Split(example, "\n"))
-	out, err := part2(in)
+	ins, nodes := parse(strings.Split(example, "\n"))
+	out, err := part2(ins, nodes)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
@@ -30,4 +31,3 @@ func TestPart2(t *testing.T) {
 		t.Errorf("expected: %d, got: %d", expected, out)
 	}
 }
-
