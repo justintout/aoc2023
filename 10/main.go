@@ -1,10 +1,3 @@
-#!/bin/bash
-
-mkdir $1
-
-touch $1/input.txt
-
-cat <<EOF >$1/main.go
 package main
 
 import (
@@ -51,33 +44,3 @@ func part1(lines []something) (total int) {
 func part2(lines []something) (total int) {
 	return total
 }
-EOF
-
-cat <<EOF >$1/main_test.go
-package main
-
-import (
-	"strings"
-	"testing"
-)
-
-var example = \`\`
-
-func TestPart1(t *testing.T) {
-	expected := 0
-	in := parse(strings.Split(example, "\n"))
-	out := part1(in)
-	if expected != out {
-		t.Errorf("expected: %d, got: %d", expected, out)
-	}
-}
-
-func TestPart2(t *testing.T) {
-	expected := 0
-	in := parse(strings.Split(example, "\n"))
-	out := part2(in)
-	if expected != out {
-		t.Errorf("expected: %d, got: %d", expected, out)
-	}
-}
-EOF
