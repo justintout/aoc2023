@@ -20,7 +20,7 @@ func TestPart1(t *testing.T) {
 }
 
 func TestPart2(t *testing.T) {
-	expected := 0
+	expected := -2
 	in := parse(strings.Split(example, "\n"))
 	out := part2(in)
 	if expected != out {

@@ -37,15 +37,32 @@ func (h history) extrapolate() []int {
 		}
 		diffs[i] = append(d, diffs[i-1][len(diffs[i-1])-1]+d[len(d)-1])
 	}
+	fmt.Println(diffs[len(diffs)-1])
+	return diffs[len(diffs)-1]
+}
+
+func (h history) detrapolate() []int {
+	diffs := h.solve()
 	slices.Reverse(diffs)
-	// fmt.Println(diffs)
-	fmt.Println(diffs[0])
-	return diffs[0]
+	for i, d := range diffs {
+		if i == 0 {
+			diffs[i] = append([]int{0}, diffs[i]...)
+			continue
+		}
+		diffs[i] = append([]int{diffs[i][0] - diffs[i-1][0]}, d...)
+	}
+	fmt.Println(diffs[len(diffs)-1])
+	return diffs[len(diffs)-1]
 }
 
 func (h history) next() int {
 	e := h.extrapolate()
 	return e[len(e)-1]
+}
+
+func (h history) prev() int {
+	e := h.detrapolate()
+	return e[0]
 }
 
 var numberRegex = regexp.MustCompile(`-?\d+`)
@@ -89,13 +106,15 @@ func parse(lines []string) []history {
 
 func part1(histories []history) (total int) {
 	for _, h := range histories {
-		n := h.next()
-		total += n
+		total += h.next()
 	}
 	return total
 }
 
 func part2(histories []history) (total int) {
+	for _, h := range histories {
+		total += h.prev()
+	}
 	return total
 }
 
